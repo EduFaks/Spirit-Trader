@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Prices</title>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/min/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@0.1.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <style>
+        body {
+            background-color: #121212; /* Dark background */
+            color: #ffffff; /* Light text */
+            font-family: Arial, sans-serif;
+        }
+        #sidebar {
+            background-color: #1e1e1e;
+            padding: 20px;
+            width: 250px;
+            position: fixed;
+            height: 100%;
+            overflow: auto;
+        }
+        #main-content {
+            margin-left: 280px; /* Same as sidebar width */
+            padding: 20px;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h2>Account Summary</h2>
+        <p>Total Balance: $10,000</p>
+        <p>Earnings: $2,000</p>
+        <p>Loss: $500</p>
+    </div>
+    <div id="main-content">
+        <h2 style="text-align: center;">ETH/USD</h2>
+        <canvas id="priceChart"></canvas>
+    </div>
+
+    <script type="text/javascript">
+        var socket = io();
+        var ctx = document.getElementById('priceChart').getContext('2d');
+        var priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Ask',
+                    data: [],
+                    borderColor: '#39ff14', /* Neon green */
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    pointBorderColor: '#17ff14',
+                    pointBackgroundColor: '#ffffff',
+                    pointHoverBackgroundColor: '#39ff14',
+                    pointHoverBorderColor: '#ffffff',
+                    lineTension: 0.1,
+                    shadowColor: '#39ff14',
+                    shadowBlur: 10,
+                }, {
+                    label: 'Bid',
+                    data: [],
+                    borderColor: '#ff073a', /* Neon red */
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    pointBorderColor: '#dd073a',
+                    pointBackgroundColor: '#ffffff',
+                    pointHoverBackgroundColor: '#ff073a',
+                    pointHoverBorderColor: '#ffffff',
+                    lineTension: 0.1,
+                    shadowColor: '#ff073a',
+                    shadowBlur: 10,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                legend: {
+                    labels: {
+                        fontColor: 'white'
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            unit: 'second',
+                            displayFormats: {
+                                second: 'h:mm:ss a'
+                            }
+                        },
+                        gridLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        ticks: {
+                            fontColor: 'white'
+                        }
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: false,
+                            fontColor: 'white',
+                            callback: function(value, index, values) {
+                                return '$' + value;
+                            }
+                        },
+                        gridLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    }]
+                }
+            }
+        });
+
+        socket.on('newdata', function(msg) {
+            var date = moment.unix(msg.time);
+            priceChart.data.datasets[0].data.push({x: date, y: msg.ask});
+            priceChart.data.datasets[1].data.push({x: date, y: msg.bid});
+            priceChart.update();
+        });
+    </script>
+</body>
+</html>
